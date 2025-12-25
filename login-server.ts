@@ -15,6 +15,20 @@ const requireApiKey = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// Loging Middleware
+const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+    // const {username, password} = req.body;
+    const apiKey = req.headers['api-key'];
+    const username = req.headers['username'];
+    const password = req.headers['password'];
+    if(username === 'admin' && password === '12345' && apiKey === 'toni'){
+        next()
+    } else {
+        res.status(401).json({ error: 'Unauthorized: Invalid credentials' });
+    }
+}
+
+
 const app = express();
 
 app.use(express.json());
@@ -26,14 +40,28 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 
-app.post('/login', requireApiKey, (req: Request, res: Response) => {
+app.post('/login', requestLogger, (req: Request, res: Response) => {
 
-    const {username, password} = req.body;
-    if(username === 'admin' && password === 'password123'){
-        res.json({ message: 'Login successful!' });
-    } else {
-        res.status(401).json({ error: 'Unauthorized: Invalid credentials' });
-    }
+    const {email, age, gender, city, country} = req.body;  
+    
+    const message =  `Welcome, ${email}! Your age is ${age}, gender is ${gender}, city is ${city} and country is ${country}.`;
+
+    const responseData = {
+        username: req.headers['username'],
+        message: message,
+        timestamp: new Date().toISOString()
+    };
+
+    res.status(200).json(responseData);
+});
+
+app.get('/get-users', requestLogger, (req: Request, res: Response) => {
+    const users = [
+        { id: 1, name: 'Alice', email: "alice@example.com" },
+        { id: 2, name: 'Bob', email: "bob@example.com" },
+        { id: 3, name: 'Charlie', email: "charlie@example.com" }
+    ];
+    res.status(200).json({ users });
 });
 
 
