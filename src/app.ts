@@ -1,8 +1,8 @@
-import express from 'express';
-import { requestLogger } from './middleware/requestLogger';
-import authRoutes from './routes/auth';
-import usersRoutes from './routes/users';
-import { errorHandler } from './middleware/errorHandler';
+import express from "express";
+import { requestLogger } from "./middleware/requestLogger";
+import authRoutes from "./routes/auth";
+import usersRoutes from "./routes/users";
+import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
 
@@ -13,8 +13,8 @@ app.use(express.json());
 app.use(requestLogger);
 
 // Routes
-app.use('/', authRoutes);
-app.use('/', usersRoutes);
+app.use("/", authRoutes);
+app.use("/", usersRoutes);
 
 // Error handler (should be last)
 app.use(errorHandler);
