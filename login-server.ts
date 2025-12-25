@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import fetch from 'node-fetch';
 
 const PORT = 3000
 
@@ -62,6 +63,20 @@ app.get('/get-users', requestLogger, (req: Request, res: Response) => {
         { id: 3, name: 'Charlie', email: "charlie@example.com" }
     ];
     res.status(200).json({ users });
+});
+
+
+let cached: { data: any; expiresAt: number } | null = null;
+app.get('/get-users-detail', requestLogger, async (req, res) => {
+  try {
+    if (cached && cached.expiresAt > Date.now()) return res.json({ users: cached.data });
+    const resp = await fetch('https://jsonplaceholder.typicode.com/users');
+    const users = await resp.json();
+    cached = { data: users, expiresAt: Date.now() + 60_000 }; // cache 60s
+    res.json({ users });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 });
 
 
