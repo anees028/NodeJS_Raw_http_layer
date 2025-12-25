@@ -1,13 +1,16 @@
 import express, { Request, Response, NextFunction } from 'express';
 import fetch from 'node-fetch';
+import 'dotenv/config';
 
-const PORT = 3000
+const PORT = process.env.PORT || 3000
+const API_KEY = process.env.API_KEY
+const FETCH_URL = process.env.FETCH_URL
 
 // The "Bouncer" Middleware
 const requireApiKey = (req: Request, res: Response, next: NextFunction) => {
   const apiKey = req.headers['api-key'];
 
-  if (apiKey && apiKey === 'secret-123') {
+  if (apiKey && apiKey === API_KEY) {
     // Authorized! Pass to the next handler.
     next();
   } else {
@@ -22,7 +25,7 @@ const requestLogger = (req: Request, res: Response, next: NextFunction) => {
     const apiKey = req.headers['api-key'];
     const username = req.headers['username'];
     const password = req.headers['password'];
-    if(username === 'admin' && password === '12345' && apiKey === 'toni'){
+    if(username === 'admin' && password === '12345' && apiKey === API_KEY){
         next()
     } else {
         res.status(401).json({ error: 'Unauthorized: Invalid credentials' });
@@ -70,7 +73,7 @@ let cached: { data: any; expiresAt: number } | null = null;
 app.get('/get-users-detail', requestLogger, async (req, res) => {
   try {
     if (cached && cached.expiresAt > Date.now()) return res.json({ users: cached.data });
-    const resp = await fetch('https://jsonplaceholder.typicode.com/users');
+    const resp = await fetch(FETCH_URL!);
     const users = await resp.json();
     cached = { data: users, expiresAt: Date.now() + 60_000 }; // cache 60s
     res.json({ users });
