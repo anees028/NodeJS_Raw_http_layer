@@ -1,37 +1,35 @@
-import { USERS_URL, USERS_CACHE_TTL } from "../config/env";
+import { USERS_URL, USERS_CACHE_TTL, FETCH_TIMEOUT_MS } from '../config/env';
 
 let cache: { data: any; expiresAt: number } | null = null;
 
-export async function getUsers(): Promise<any[]> {
-  if (cache && cache.expiresAt > Date.now()) return cache.data;
-
-  // Timeout using AbortController (5s)
-  // Purpose: return cached users immediately if the cache exists and hasn't expired.
-  // This avoids the network call, reduces latency, and lowers upstream load.
+async function fetchWithTimeout(url: string, timeoutMs: number) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const resp = await fetch(USERS_URL, { signal: controller.signal });
+    const resp = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
-    if (!resp.ok) throw new Error(`Upstream responded with ${resp.status}`);
-    const users = await resp.json();
-    cache = { data: users, expiresAt: Date.now() + USERS_CACHE_TTL };
-    return users;
+    return resp;
   } catch (err) {
     clearTimeout(timeout);
     throw err;
   }
 }
 
-export async function getUserById(userId: number): Promise<any> {
-  try {
-    const userDetail = await fetch(`${USERS_URL}/${userId}`);
-    if (!userDetail.ok)
-      throw new Error(`Upstream responded with ${userDetail.status}`);
-    const user = await userDetail.json();
-    return user;
-  } catch (err) {
-    throw err;
-  }
+export async function getUsers(): Promise<any[]> {
+  if (cache && cache.expiresAt > Date.now()) return cache.data;
+
+  const resp = await fetchWithTimeout(USERS_URL, FETCH_TIMEOUT_MS);
+  if (!resp.ok) throw new Error(`Upstream responded with ${resp.status}`);
+  const users = await resp.json();
+  cache = { data: users, expiresAt: Date.now() + USERS_CACHE_TTL };
+  return users;
+}
+
+export async function getUserById(id: number): Promise<any> {
+  // Fetch a single user directly (no caching per-id here; could be added)
+  const resp = await fetchWithTimeout(`${USERS_URL}/${id}`, FETCH_TIMEOUT_MS);
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error(`Upstream responded with ${resp.status}`);
+  return resp.json();
 }
